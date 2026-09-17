@@ -12,9 +12,10 @@ pub enum PlayerPowerup {
     PropellerMushroom,
     PenguinSuit,
     IceFlower,
+    HammerSuit,
 }
 
-pub const POWERUP_COUNT: usize = 7;
+pub const POWERUP_COUNT: usize = 8;
 
 #[derive(Copy, Clone, PartialEq)]
 pub enum PlayerCharacter {
@@ -46,17 +47,6 @@ pub const AMBUSH_ENEMY_COUNT: usize = 4;
 // there are 64 hint movies, but 70 is the constant
 pub const HINT_MOVIE_COUNT: usize = 70;
 pub const ACTUAL_HINT_MOVIE_COUNT: usize = 64;
-
-#[derive(Copy, Clone, PartialEq)]
-pub enum StartingMushroomKind {
-    None,
-    Star,
-    Item,
-    OneUp,
-    StarRescue,
-    ItemRescue,
-    OneUpRescue,
-}
 
 #[derive(Copy, Clone)]
 pub enum EnemyDirection {
@@ -94,6 +84,7 @@ bitflags! {
         const GoalSecret = 0x20;
         const SuperGuideGoalNormal = 0x80;
         const SuperGuideGoalSecret = 0x100;
+        const StageUnlocked = 0x200;
     }
 }
 
@@ -165,7 +156,7 @@ pub const HINT_MOVIE_TITLES: [&str; ACTUAL_HINT_MOVIE_COUNT] = [
 ];
 
 // the powerup names used in the items menu on the world map
-pub const ITEM_MENU_POWERUP_NAMES: [&str; 7] = [
+pub const ITEM_MENU_POWERUP_NAMES: [&str; 8] = [
     "Mushroom",
     "Fire Flower",
     "Propeller Mushroom",
@@ -173,9 +164,10 @@ pub const ITEM_MENU_POWERUP_NAMES: [&str; 7] = [
     "Penguin Suit",
     "Mini Mushroom",
     "Star",
+    "Hammer Suit",
 ];
 
-pub const PLAYER_POWERUP_STATUS: [&str; 7] = [
+pub const PLAYER_POWERUP_STATUS: [&str; 8] = [
     "None",
     "Mushroom",
     "Fire Flower",
@@ -183,6 +175,7 @@ pub const PLAYER_POWERUP_STATUS: [&str; 7] = [
     "Propeller Mushroom",
     "Penguin Suit",
     "Ice Flower",
+    "Hammer Suit",
 ];
 
 pub const POWERUP_STOCK_MAX: u8 = 99;

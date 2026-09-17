@@ -11,9 +11,9 @@ pub struct SaveSlot {
     pub cur_subworld: u8,
     pub cur_path_node: u8,
     pub w5_vine_reshuffle_counter: u8,
-    pub w3_switch_on: bool,
+    pub switch_palace_flags: u8,
     pub item_stock: [u8; POWERUP_COUNT],
-    pub starting_mushroom_house_type: [StartingMushroomKind; WORLD_COUNT],
+    pub unused_area: [u8; 9], // Unused in Newer (removing specifically due to it being partially overwritten)
     pub player_continues: [u8; PLAYER_COUNT],
     pub player_coins: [u8; PLAYER_COUNT],
     pub player_lives: [u8; PLAYER_COUNT],
@@ -22,7 +22,7 @@ pub struct SaveSlot {
     pub player_powerup: [PlayerPowerup; PLAYER_COUNT],
     pub world_unlocked: [bool; WORLD_COUNT],
     pub enemy_revival_count: [[u8; AMBUSH_ENEMY_COUNT]; WORLD_COUNT],
-    pub staff_credits_high_score: u16,
+    pub star_coins_spent: u16,
     pub ingame_score: u32,
     pub stage_completion_flags: [[u32; STAGE_COUNT]; WORLD_COUNT],
     pub hint_movie_bought: [bool; HINT_MOVIE_COUNT],
@@ -42,9 +42,9 @@ impl SaveSlot {
             cur_subworld: 0,
             cur_path_node: 0,
             w5_vine_reshuffle_counter: 0,
-            w3_switch_on: false,
+            switch_palace_flags: 0,
             item_stock: [0; POWERUP_COUNT],
-            starting_mushroom_house_type: [StartingMushroomKind::None; WORLD_COUNT],
+            unused_area: [0; 9],
             player_continues: [0; PLAYER_COUNT],
             player_coins: [0; PLAYER_COUNT],
             player_lives: [0; PLAYER_COUNT],
@@ -58,7 +58,7 @@ impl SaveSlot {
             player_powerup: [PlayerPowerup::None; PLAYER_COUNT],
             world_unlocked: [false; WORLD_COUNT],
             enemy_revival_count: [[0; AMBUSH_ENEMY_COUNT]; WORLD_COUNT],
-            staff_credits_high_score: 0,
+            star_coins_spent: 0,
             ingame_score: 0,
             stage_completion_flags: [[0; STAGE_COUNT]; WORLD_COUNT],
             hint_movie_bought: [false; HINT_MOVIE_COUNT],
@@ -79,26 +79,14 @@ impl SaveSlot {
         let cur_subworld = input[start_offset + 4];
         let cur_path_node = input[start_offset + 5];
         let w5_vine_reshuffle_counter = input[start_offset + 6];
-        let w3_switch_on = input[start_offset + 7] != 0;
+        let switch_palace_flags = input[start_offset + 7];
 
         let mut item_stock = [0u8; POWERUP_COUNT];
         for i in 0..POWERUP_COUNT {
             item_stock[i] = input[start_offset + 9 + i];
         }
 
-        let mut starting_mushroom_house_type: [StartingMushroomKind; WORLD_COUNT] =
-            [StartingMushroomKind::None; WORLD_COUNT];
-        for i in 0..WORLD_COUNT {
-            starting_mushroom_house_type[i] = match input[start_offset + 0x10 + i] {
-                1 => StartingMushroomKind::Star,
-                2 => StartingMushroomKind::Item,
-                3 => StartingMushroomKind::OneUp,
-                4 => StartingMushroomKind::StarRescue,
-                5 => StartingMushroomKind::ItemRescue,
-                6 => StartingMushroomKind::OneUpRescue,
-                _ => StartingMushroomKind::None,
-            };
-        }
+        let unused_area: [u8; 9] = [0; 9];
 
         let mut player_character = [
             PlayerCharacter::Mario,
@@ -134,6 +122,7 @@ impl SaveSlot {
                 4 => PlayerPowerup::PropellerMushroom,
                 5 => PlayerPowerup::PenguinSuit,
                 6 => PlayerPowerup::IceFlower,
+                7 => PlayerPowerup::HammerSuit,
 
                 // default to none
                 _ => PlayerPowerup::None,
@@ -181,7 +170,7 @@ impl SaveSlot {
             }
         }
 
-        let staff_credits_high_score =
+        let star_coins_spent =
             BigEndian::read_u16(&input[start_offset + 0x66..start_offset + 0x68]);
         let ingame_score = BigEndian::read_u32(&input[start_offset + 0x68..start_offset + 0x6C]);
 
@@ -197,9 +186,9 @@ impl SaveSlot {
             cur_subworld,
             cur_path_node,
             w5_vine_reshuffle_counter,
-            w3_switch_on,
+            switch_palace_flags,
             item_stock,
-            starting_mushroom_house_type,
+            unused_area,
             player_continues,
             player_coins,
             player_lives,
@@ -208,7 +197,7 @@ impl SaveSlot {
             player_powerup,
             world_unlocked,
             enemy_revival_count,
-            staff_credits_high_score,
+            star_coins_spent,
             ingame_score,
             stage_completion_flags,
             hint_movie_bought,
@@ -232,7 +221,7 @@ impl SaveSlot {
         out[4] = self.cur_subworld;
         out[5] = self.cur_path_node;
         out[6] = self.w5_vine_reshuffle_counter;
-        out[7] = if self.w3_switch_on { 1 } else { 0 };
+        out[7] = self.switch_palace_flags;
 
         out[9..(POWERUP_COUNT + 9)].copy_from_slice(&self.item_stock[..POWERUP_COUNT]);
 
@@ -257,20 +246,15 @@ impl SaveSlot {
                 PlayerPowerup::PropellerMushroom => 4,
                 PlayerPowerup::PenguinSuit => 5,
                 PlayerPowerup::IceFlower => 6,
+                PlayerPowerup::HammerSuit => 7,
             };
         }
 
-        for i in 0..WORLD_COUNT {
-            out[0x10 + i] = match self.starting_mushroom_house_type[i] {
-                StartingMushroomKind::None => 0,
-                StartingMushroomKind::Star => 1,
-                StartingMushroomKind::Item => 2,
-                StartingMushroomKind::OneUp => 3,
-                StartingMushroomKind::StarRescue => 4,
-                StartingMushroomKind::ItemRescue => 5,
-                StartingMushroomKind::OneUpRescue => 6,
-            };
+        for i in 0..9 {
+            out[0x11 + i] = self.unused_area[i]
+        }
 
+        for i in 0..WORLD_COUNT {
             out[0x32 + i] = if self.world_unlocked[i] { 1 } else { 0 };
             out[0x742 + i] = self.toad_rescue_level[i];
 
@@ -299,7 +283,7 @@ impl SaveSlot {
             }
         }
 
-        BigEndian::write_u16(&mut out[0x66..0x68], self.staff_credits_high_score);
+        BigEndian::write_u16(&mut out[0x66..0x68], self.star_coins_spent);
         BigEndian::write_u32(&mut out[0x68..0x6C], self.ingame_score);
 
         for i in 0..HINT_MOVIE_COUNT {

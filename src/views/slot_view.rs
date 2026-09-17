@@ -8,7 +8,7 @@ pub struct SlotView {
     player_edit_index: usize,
 }
 
-fn get_house_type_string(house_type: StartingMushroomKind) -> String {
+/*fn get_house_type_string(house_type: StartingMushroomKind) -> String {
     match house_type {
         StartingMushroomKind::None => "None",
         StartingMushroomKind::Star => "Star",
@@ -19,24 +19,20 @@ fn get_house_type_string(house_type: StartingMushroomKind) -> String {
         StartingMushroomKind::OneUpRescue => "1-Up (Rescue)",
     }
     .to_string()
-}
+}*/
 
 fn get_stage_name_string(stage_index: usize) -> String {
     match stage_index {
-        0..=8 => format!("Stage {}", stage_index + 1),
-        19 => String::from("Coin Battle Stage"),
-        20 => String::from("Ghost House"),
-        21 | 22 => format!("Tower {}", stage_index - 20),
-        23 | 24 => format!("Castle {}", stage_index - 22),
-        25..=28 => format!("Toad House {}", stage_index - 24),
-        32..=34 => format!("Enemy Ambush {}", stage_index - 31),
-        35 => String::from("Cannon"),
-        37 => String::from("Airship"),
-        38 => String::from("\"Rescue\""),
-        39 => String::from("Title Screen"),
-        40 => String::from("Peach's Castle"),
-        41 => String::from("Staff Credits"),
-        _ => format!("(unused index {})", stage_index),
+        0..=9 => format!("Stage {}", stage_index + 1),
+        14 | 15 => format!("Tower {}", stage_index - 13),
+        23 => format!("Final Castle"),
+        24 => format!("Castle"),
+        30 => format!("Switch Palace"),
+        32 => format!("Challenge House"),
+        33 => format!("Music House"),
+        // Skipping idx 40, which is used for some cutscenes and the credits
+        42 => format!("Invalid Stage ID"),
+        _ => format!("(unused slot {})", stage_index + 1),
     }
 }
 
@@ -83,10 +79,25 @@ impl SlotView {
                 });
     
                 ui.vertical(|ui| {
-                    ui.label("World unlocks");
-                    // world unlocks
-                    for i in 0..ACTUAL_WORLD_COUNT {
-                        ui.checkbox(&mut slot.world_unlocked[i], format!("World {}", i + 1));
+                    ui.label("Enabled switches");
+                    // switch palaces
+                    let labels = [
+                        "Red",
+                        "Green",
+                        "Yellow",
+                        "Blue"
+                    ];
+        
+                    for (i, label) in labels.iter().enumerate() {
+                        let mut is_checked = (slot.switch_palace_flags & (1 << i)) != 0;
+        
+                        if ui.checkbox(&mut is_checked, *label).changed() {
+                            if is_checked {
+                                slot.switch_palace_flags |= 1 << i;
+                            } else {
+                                slot.switch_palace_flags &= !(1 << i);
+                            }
+                        }
                     }
                 });
                 ui.vertical(|ui|{
@@ -114,9 +125,9 @@ impl SlotView {
                     });
                     ui.add_space(3.0);
                     ui.vertical(|ui|{
-                        ui.label("Credits high score");
+                        ui.label("Spent star coins");
                         ui.add(
-                            egui::DragValue::new(&mut slot.staff_credits_high_score)
+                            egui::DragValue::new(&mut slot.star_coins_spent)
                             .speed(1)
                             .range(0..=u16::MAX)
                         );
@@ -143,10 +154,7 @@ impl SlotView {
 
             // world state
             ui.vertical(|ui|{
-                // w3 switch
-                ui.checkbox(&mut slot.w3_switch_on, "World 3 switch on?");
                 // w5 vine reshuffle
-                ui.add_space(3.0);
                 ui.label("W5 vine reshuffle counter");
                 ui.add(
                     egui::DragValue::new(&mut slot.w5_vine_reshuffle_counter)
@@ -170,48 +178,6 @@ impl SlotView {
                     }
                 });
                 
-                // toad house
-                egui::ComboBox::from_label("House type")
-                .selected_text(
-                    get_house_type_string(slot.starting_mushroom_house_type[self.world_edit_index])
-                )
-                .show_ui(ui, |ui|{
-                    for i in 0..=6 {
-                        let val = match i {
-                            0 => StartingMushroomKind::None,
-                            1 => StartingMushroomKind::Star,
-                            2 => StartingMushroomKind::Item,
-                            3 => StartingMushroomKind::OneUp,
-                            4 => StartingMushroomKind::StarRescue,
-                            5 => StartingMushroomKind::ItemRescue,
-                            6 => StartingMushroomKind::OneUpRescue,
-                            _ => StartingMushroomKind::None
-                        };
-                        ui.selectable_value(
-                            &mut slot.starting_mushroom_house_type[self.world_edit_index],
-                            val,
-                            get_house_type_string(val)
-                        )
-                        .on_hover_text(
-                            "If there was not a toad house generated by the game, changing this value from None will not work."
-                        );
-                    }
-                });
-                egui::ComboBox::from_label("Toad Rescue Level")
-                .selected_text(
-                    get_stage_name_string(slot.toad_rescue_level[self.world_edit_index] as usize)
-                )
-                .show_ui(ui, |ui|{
-                    for i in 0..=STAGE_COUNT {
-                        ui.selectable_value(
-                            &mut slot.toad_rescue_level[self.world_edit_index],
-                            i as u8,
-                            get_stage_name_string(i)
-                        ).on_hover_text(
-                            "After rescuing a toad from a level, the game will set this stage index to one that is normally inaccessible."
-                        );
-                    }
-                });
                 ui.vertical(|ui|{
                     // stage completion
                     egui::ComboBox::from_label("Selected Stage")
@@ -236,10 +202,11 @@ impl SlotView {
                         "Goal (Normal)",
                         "Goal (Secret)",
                         "Super Guide (Normal)",
-                        "Super Guide (Secret)"
+                        "Super Guide (Secret)",
+                        "Visible in Star Coins Menu",
                     ];
                     let flags = [
-                        1, 2, 4, 0x10, 0x20, 0x80, 0x100
+                        1, 2, 4, 0x10, 0x20, 0x80, 0x100, 0x200
                     ];
                     for i in 0..labels.len() {
                         let mut is_checked = (
@@ -365,6 +332,7 @@ impl SlotView {
                             PlayerPowerup::PropellerMushroom => "Propeller Mushroom",
                             PlayerPowerup::PenguinSuit => "Penguin Suit",
                             PlayerPowerup::IceFlower => "Ice Flower",
+                            PlayerPowerup::HammerSuit => "Hammer Suit",
                         }
                     ).show_ui(ui, |ui|{
                         for (i, status) in PLAYER_POWERUP_STATUS.iter().enumerate() {
@@ -376,6 +344,7 @@ impl SlotView {
                                 4 => PlayerPowerup::PropellerMushroom,
                                 5 => PlayerPowerup::PenguinSuit,
                                 6 => PlayerPowerup::IceFlower,
+                                7 => PlayerPowerup::HammerSuit,
                                 _ => PlayerPowerup::None                                    
                             };
                             ui.selectable_value(
