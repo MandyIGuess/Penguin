@@ -8,19 +8,6 @@ pub struct SlotView {
     player_edit_index: usize,
 }
 
-/*fn get_house_type_string(house_type: StartingMushroomKind) -> String {
-    match house_type {
-        StartingMushroomKind::None => "None",
-        StartingMushroomKind::Star => "Star",
-        StartingMushroomKind::Item => "Item",
-        StartingMushroomKind::OneUp => "1-Up",
-        StartingMushroomKind::StarRescue => "Star (Rescue)",
-        StartingMushroomKind::ItemRescue => "Item (Rescue)",
-        StartingMushroomKind::OneUpRescue => "1-Up (Rescue)",
-    }
-    .to_string()
-}*/
-
 fn get_stage_name_string(stage_index: usize) -> String {
     match stage_index {
         0..=9 => format!("Stage {}", stage_index + 1),
@@ -100,14 +87,6 @@ impl SlotView {
                         }
                     }
                 });
-                ui.vertical(|ui|{
-                    ui.label("Hint movie bought");
-                    egui::ScrollArea::vertical().show(ui, |ui|{
-                        for (i, title) in HINT_MOVIE_TITLES.iter().enumerate().take(ACTUAL_HINT_MOVIE_COUNT) {
-                            ui.checkbox(&mut slot.hint_movie_bought[i], *title);
-                        }
-                    });
-                });
             });
 
             ui.separator();
@@ -154,22 +133,13 @@ impl SlotView {
 
             // world state
             ui.vertical(|ui|{
-                // w5 vine reshuffle
-                ui.label("W5 vine reshuffle counter");
-                ui.add(
-                    egui::DragValue::new(&mut slot.w5_vine_reshuffle_counter)
-                    .speed(1)
-                    .range(0..=255)
-                );
-                
-                ui.add_space(3.0);
 
                 egui::ComboBox::from_label("Selected World")
                 .selected_text(
                     format!("World {}", self.world_edit_index + 1)
                 )
                 .show_ui(ui, |ui|{
-                    for i in 0..ACTUAL_WORLD_COUNT {
+                    for i in 0..WORLD_COUNT {
                         ui.selectable_value(
                             &mut self.world_edit_index,
                             i,
@@ -231,31 +201,33 @@ impl SlotView {
 
             // player information
             ui.vertical(|ui|{
-                
-                egui::ComboBox::from_label("Current world")
-                    .selected_text(format!("World {}", slot.cur_world + 1))
-                    .show_ui(ui, |ui|{
-                        for i in 0..ACTUAL_WORLD_COUNT as u8 {
-                            ui.selectable_value(
-                                &mut slot.cur_world,
-                                i,
-                            format!("World {}", i + 1)
-                        );
-                    }
+                ui.horizontal(|ui|{
+                    ui.add(
+                        egui::DragValue::new(&mut slot.cur_world)
+                        .speed(1)
+                        .range(0..=u8::MAX)
+                    );
+                    
+                    ui.label("Current map")
+                    .on_hover_text("Map IDs are the index of the map in List.txt");
                 });
-                ui.label("Current subworld")
-                .on_hover_text("An example of a 'subworld' is the second half of World 3.");
-                ui.add(
-                    egui::DragValue::new(&mut slot.cur_subworld)
-                    .speed(1)
-                    .range(0..=1)
-                );
-                ui.label("Current path node");
-                ui.add(
+                ui.horizontal(|ui|{
+                    ui.add(
                     egui::DragValue::new(&mut slot.cur_path_node)
                     .speed(1)
                     .range(0..=u8::MAX)
-                );
+                    );
+                    ui.label("Current path node");
+                });
+                ui.horizontal(|ui|{
+                    ui.add(
+                        egui::DragValue::new(&mut slot.cur_subworld)
+                        .speed(1)
+                        .range(0..=1)
+                    );
+                    ui.label("Current subworld (unused)");
+                });
+
                 // *player* information
 
                 ui.vertical(|ui|{

@@ -25,7 +25,21 @@ pub struct SaveSlot {
     pub star_coins_spent: u16,
     pub ingame_score: u32,
     pub stage_completion_flags: [[u32; STAGE_COUNT]; WORLD_COUNT],
-    pub hint_movie_bought: [bool; HINT_MOVIE_COUNT],
+    pub world_name: [u8; 32],
+    pub file_text_color_1: [u8; 4],
+    pub file_text_color_2: [u8; 4],
+    pub file_back_color_1: [u8; 4],
+    pub file_back_color_2: [u8; 4],
+    pub hud_text_color_1: [u8; 4],
+    pub hud_text_color_2: [u8; 4],
+    pub hud_hue: i16,
+    pub hud_sat: i8,
+    pub hud_light: i8, // Ranges from -50 to 50
+    pub map_music: u8,
+    pub world_id: u8,
+    pub title_screen_world: u8,
+    pub title_screen_stage: u8,
+    pub unused_area_2: [u8; 6],
     pub toad_rescue_level: [u8; WORLD_COUNT],
     pub enemy_subworld: [[u8; AMBUSH_ENEMY_COUNT]; WORLD_COUNT],
     pub enemy_pos_index: [[u8; AMBUSH_ENEMY_COUNT]; WORLD_COUNT],
@@ -61,7 +75,21 @@ impl SaveSlot {
             star_coins_spent: 0,
             ingame_score: 0,
             stage_completion_flags: [[0; STAGE_COUNT]; WORLD_COUNT],
-            hint_movie_bought: [false; HINT_MOVIE_COUNT],
+            world_name: [0; 32],
+            file_text_color_1: [0; 4],
+            file_text_color_2: [0; 4],
+            file_back_color_1: [0; 4],
+            file_back_color_2: [0; 4],
+            hud_text_color_1: [0; 4],
+            hud_text_color_2: [0; 4],
+            hud_hue: 0,
+            hud_sat: 0,
+            hud_light: 0,
+            map_music: 0,
+            world_id: 0,
+            title_screen_world: 0,
+            title_screen_stage: 0,
+            unused_area_2: [0; 6],
             toad_rescue_level: [0; WORLD_COUNT],
             enemy_subworld: [[0; AMBUSH_ENEMY_COUNT]; WORLD_COUNT],
             enemy_pos_index: [[0; AMBUSH_ENEMY_COUNT]; WORLD_COUNT],
@@ -87,6 +115,7 @@ impl SaveSlot {
         }
 
         let unused_area: [u8; 9] = [0; 9];
+        let unused_area_2: [u8; 6] = [0; 6];
 
         let mut player_character = [
             PlayerCharacter::Mario,
@@ -132,7 +161,6 @@ impl SaveSlot {
         let mut world_unlocked = [false; WORLD_COUNT];
         let mut enemy_revival_count = [[0u8; AMBUSH_ENEMY_COUNT]; WORLD_COUNT];
         let mut stage_completion_flags = [[0u32; STAGE_COUNT]; WORLD_COUNT];
-        let mut hint_movie_bought = [false; HINT_MOVIE_COUNT];
         let mut toad_rescue_level = [0u8; WORLD_COUNT];
         let mut enemy_subworld = [[0u8; AMBUSH_ENEMY_COUNT]; WORLD_COUNT];
         let mut enemy_pos_index = [[0u8; AMBUSH_ENEMY_COUNT]; WORLD_COUNT];
@@ -174,11 +202,40 @@ impl SaveSlot {
             BigEndian::read_u16(&input[start_offset + 0x66..start_offset + 0x68]);
         let ingame_score = BigEndian::read_u32(&input[start_offset + 0x68..start_offset + 0x6C]);
 
-        for i in 0..HINT_MOVIE_COUNT {
-            hint_movie_bought[i] = input[start_offset + 0x6FC + i] != 0;
+        let player_death_count_w3_l4_switch = input[start_offset + 0x968];
+
+        let mut world_name = [0u8; 32];
+        for i in 0..32 {
+            world_name[i] = input[start_offset + 0x6FC + i];
         }
 
-        let player_death_count_w3_l4_switch = input[start_offset + 0x968];
+        let hud_hue =
+            BigEndian::read_i16(&input[start_offset + 0x734..start_offset + 0x736]);
+
+        let hud_sat = input[start_offset + 0x736] as i8;
+        let hud_light = input[start_offset + 0x737] as i8;
+        let map_music = input[start_offset + 0x738];
+        let world_id = input[start_offset + 0x739];
+        let title_screen_world = input[start_offset + 0x73A];
+        let title_screen_stage = input[start_offset + 0x73B];
+
+        let mut file_text_color_1 = [0u8; 4];
+        let mut file_text_color_2 = [0u8; 4];
+        let mut file_back_color_1 = [0u8; 4];
+        let mut file_back_color_2 = [0u8; 4];
+        let mut hud_text_color_1 = [0u8; 4];
+        let mut hud_text_color_2 = [0u8; 4];
+
+        for i in 0..4 {
+            file_text_color_1[i] = input[start_offset + 0x71C + i];
+            file_text_color_2[i] = input[start_offset + 0x720 + i];
+
+            file_back_color_1[i] = input[start_offset + 0x724 + i];
+            file_back_color_2[i] = input[start_offset + 0x728 + i];
+
+            hud_text_color_1[i] = input[start_offset + 0x72C + i];
+            hud_text_color_2[i] = input[start_offset + 0x730 + i];
+        }
 
         Self {
             game_completion_flags,
@@ -200,7 +257,21 @@ impl SaveSlot {
             star_coins_spent,
             ingame_score,
             stage_completion_flags,
-            hint_movie_bought,
+            world_name,
+            file_text_color_1,
+            file_text_color_2,
+            file_back_color_1,
+            file_back_color_2,
+            hud_text_color_1,
+            hud_text_color_2,
+            hud_hue,
+            hud_sat,
+            hud_light,
+            map_music,
+            world_id,
+            title_screen_world,
+            title_screen_stage,
+            unused_area_2,
             toad_rescue_level,
             enemy_subworld,
             enemy_pos_index,
@@ -286,8 +357,32 @@ impl SaveSlot {
         BigEndian::write_u16(&mut out[0x66..0x68], self.star_coins_spent);
         BigEndian::write_u32(&mut out[0x68..0x6C], self.ingame_score);
 
-        for i in 0..HINT_MOVIE_COUNT {
-            out[0x6FC + i] = if self.hint_movie_bought[i] { 1 } else { 0 };
+        for i in 0..32 {
+            out[0x6FC + i] = self.world_name[i];
+        }
+
+        out[0x736] = self.hud_sat as u8;
+        out[0x737] = self.hud_light as u8;
+        out[0x738] = self.map_music;
+        out[0x739] = self.world_id;
+        out[0x73A] = self.title_screen_world;
+        out[0x73B] = self.title_screen_stage;
+
+        BigEndian::write_i16(&mut out[0x734..0x736], self.hud_hue);
+
+        for i in 0..4 {
+            out[0x71C + i] = self.file_text_color_1[i];
+            out[0x720 + i] = self.file_text_color_2[i];
+
+            out[0x724 + i] = self.file_back_color_1[i];
+            out[0x728 + i] = self.file_back_color_2[i];
+
+            out[0x72C + i] = self.hud_text_color_1[i];
+            out[0x730 + i] = self.hud_text_color_2[i];
+        }
+
+        for i in 0..6 {
+            out[0x73C + i] = self.unused_area_2[i]
         }
 
         out[0x968] = self.player_death_count_w3_l4_switch;
