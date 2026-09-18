@@ -80,7 +80,7 @@ impl PenguinApp {
 
     fn try_open(&mut self) {
         let path = rfd::FileDialog::new()
-            .add_filter("New Super Mario Bros. Wii save file", &["sav"])
+            .add_filter("Newer Super Mario Bros. Wii save file", &["sav"])
             .pick_file();
 
         if let Some(p) = path {
@@ -106,7 +106,7 @@ impl PenguinApp {
             self.file_path.clone()
         } else {
             match rfd::FileDialog::new()
-                .add_filter("New Super Mario Bros. Wii save file", &["sav"])
+                .add_filter("Newer Super Mario Bros. Wii save file", &["sav"])
                 .set_can_create_directories(true)
                 .save_file()
             {
