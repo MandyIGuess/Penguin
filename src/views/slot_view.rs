@@ -223,9 +223,24 @@ impl SlotView {
                     ui.add(
                         egui::DragValue::new(&mut slot.cur_subworld)
                         .speed(1)
-                        .range(0..=1)
+                        .range(0..=u8::MAX)
                     );
                     ui.label("Current subworld (unused)");
+                });
+
+                ui.horizontal(|ui|{
+                    ui.label("Title Screen Level:");
+                    ui.add(
+                        egui::DragValue::new(&mut slot.title_screen_world)
+                        .speed(1)
+                        .range(0..=u8::MAX)
+                    );
+                    ui.label("-");
+                    ui.add(
+                        egui::DragValue::new(&mut slot.title_screen_stage)
+                        .speed(1)
+                        .range(0..=u8::MAX)
+                    );
                 });
 
                 // *player* information

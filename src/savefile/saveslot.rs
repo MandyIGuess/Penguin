@@ -216,8 +216,8 @@ impl SaveSlot {
         let hud_light = input[start_offset + 0x737] as i8;
         let map_music = input[start_offset + 0x738];
         let world_id = input[start_offset + 0x739];
-        let title_screen_world = input[start_offset + 0x73A];
-        let title_screen_stage = input[start_offset + 0x73B];
+        let title_screen_world = input[start_offset + 0x73A] + 1;
+        let title_screen_stage = input[start_offset + 0x73B] + 1;
 
         let mut file_text_color_1 = [0u8; 4];
         let mut file_text_color_2 = [0u8; 4];
@@ -365,8 +365,8 @@ impl SaveSlot {
         out[0x737] = self.hud_light as u8;
         out[0x738] = self.map_music;
         out[0x739] = self.world_id;
-        out[0x73A] = self.title_screen_world;
-        out[0x73B] = self.title_screen_stage;
+        out[0x73A] = self.title_screen_world - 1;
+        out[0x73B] = self.title_screen_stage - 1;
 
         BigEndian::write_i16(&mut out[0x734..0x736], self.hud_hue);
 
